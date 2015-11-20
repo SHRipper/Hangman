@@ -10,6 +10,11 @@ namespace Hangman
     {
         static void Main(string[] args)
         {
+            string ergebnisAusgabe = "";
+            string buchstabeBereitsFalschAusgabe = "";
+            bool spielerHatGewonnen = false;
+            int fehler = 0;
+
             // Array der zu erratenen Wörter
             string[] wörter = new string[10];
             wörter[0] = "programmieren";
@@ -27,15 +32,15 @@ namespace Hangman
             Random rnd = new Random();
             int zufallsIndex = rnd.Next(0, wörter.Length);
 
-
-            int wortlänge = wörter[zufallsIndex].Length;
+            string gesuchtesWort = wörter[zufallsIndex];
+            int wortlänge = gesuchtesWort.Length;
             char[] buchstaben = new char[wortlänge];
             char[] falscheBuchstaben = new char[6]; // max. 6 Fehler erlaubt
             char[] verdecktesWort = new char[wortlänge];
 
             // Füllen des Char-Arrays "buchstaben"
             int index = 0;
-            foreach (char c in wörter[zufallsIndex])
+            foreach (char c in gesuchtesWort)
             {
                 buchstaben[index] = c;
                 index++;
@@ -49,34 +54,65 @@ namespace Hangman
 
             // Vorgeschichte bei Spielstart
             prolog();
-
+           
 
             /*
              * Spiel Schleife
              */
-
-            bool spielerHatGewonnen = false;
-            int fehler = 0;
             while (!spielerHatGewonnen && fehler < 6)
             {
-                bool istImWort = false;
-
                 // Ausgabe
+                Console.Clear();
                 zeichneHangman(fehler);
-                Console.WriteLine("Gesucht ist ein Wort mit {0} Buchstaben. \n", wortlänge);
+                Console.WriteLine("Gesucht ist ein Wort mit {0} Buchstaben.\n", wortlänge);
                 Console.Write("Das gesuchte Wort ist: ");
                 for (int i = 0; i < wortlänge; i++)
                 {
                     Console.Write(verdecktesWort[i] + " ");
                 }
                 Console.Write("\n\n");
+                Console.Write("Bereits verwendete falsche Buchstaben: ");
+                foreach (char c in falscheBuchstaben)
+                {
+                    Console.Write(c + " ");
+                }
+                Console.Write("\n\n");
+                Console.WriteLine("{0} von 6 Fehlern\n", fehler);
+                Console.Write(buchstabeBereitsFalschAusgabe);
+                buchstabeBereitsFalschAusgabe = "";
+                Console.Write(ergebnisAusgabe);
                 Console.Write("Buchstaben eingeben: ");
-                
-                // Eingegebenen Buchstaben in Variable einlesen
-                char buchstabe = Char.ToLower(Console.ReadKey().KeyChar);
 
+                // Prüfung der Eingabe
+                bool istBuchstabe = false;
+                char buchstabe = ' ';
+                while (!istBuchstabe)
+                {
+                    // Cursor immer hinter "Buchstabe eingeben: " setzen
+                    Console.CursorLeft = 21;
 
-                // Im Wort nach dem Buchstaben suchen
+                    char eingabe = Char.ToLower(Console.ReadKey().KeyChar);
+                    int ascii = Convert.ToInt32(eingabe);
+
+                    // Prüfung ob sich der eingegebene Buchstabe a - z oder ä,ü,ö ist
+                    if ((ascii >= 97 && ascii <= 122) || ascii == 228 || ascii == 252 || ascii == 246)
+                    {
+                        istBuchstabe = true;
+                        buchstabe = eingabe;
+                    }
+                    else
+                    {
+                        // "eingabe" ist kein Buchstabe zwischen a und z oder A und Z
+
+                        // Überschreiben der möglichen Fragezeichenboxen,
+                        // die z.B. bei der Eingabe von "ESC" entstehen
+                        Console.CursorLeft = 21;
+                        Console.Write(" "); 
+                    }
+                }
+
+                // Im gesuchten Wort nach dem Buchstaben suchen
+                bool istImWort = false;
                 for (int i = 0; i < wortlänge; i++)
                 {
                     if (buchstabe == buchstaben[i])
@@ -87,43 +123,40 @@ namespace Hangman
                     }
                 }
 
-                // Der Buchstabe befindet sich nicht im Wort
                 if (!istImWort)
                 {
+                    // Der Buchstabe befindet sich nicht im Wort
+
                     bool buchstabeBereitsFalsch = false;
                     for (int i = 0; i < falscheBuchstaben.Length; i++)
                     {
                         if (buchstabe == falscheBuchstaben[i])
                         {
+                            // eingegebener Buchstabe befindet sich schon im 
+                            // falsche Buchstaben Array
+
                             buchstabeBereitsFalsch = true;
-
-                            // Ausgabe, wenn der Buchstabe sich bereits im "falscheBuchstaben" Array befindet
-                            Console.WriteLine("\n\nDu hast den Buchstaben \"{0}\" bereits verwendet.", buchstabe);
-                            Console.Write("Bereits verwendete falsche Buchstaben: ");
-                            foreach (char c in falscheBuchstaben)
-                            {
-                                Console.Write(c + " ");
-                            }
-                            Console.Write("\n\n");
-
+                            buchstabeBereitsFalschAusgabe = "Du hast den Buchstaben \"" + 
+                                buchstabe + "\" bereits verwendet.\n";
                         }
                     }
 
-                    // Der Buchstabe wurde das erste mal falsch eingegeben
                     if (!buchstabeBereitsFalsch)
                     {
+                        // Der Buchstabe wurde das erste mal falsch eingegeben
+
                         //Aufnehmen des Buchstabens in das Array
                         falscheBuchstaben[fehler] = buchstabe;
 
                         fehler++;
-                        Console.WriteLine("\t--> {0} ist falsch!\n\n", buchstabe);
+                        ergebnisAusgabe = "--> " + buchstabe + " ist falsch!\n\n";
                     }
-                    Console.WriteLine("{0} von 6 Fehlern", fehler);
                 }
-                // Der Buchstabe befindet sich im Wort
                 else 
                 {
-                    Console.WriteLine("--> {0} ist richtig!\n\n", buchstabe);
+                    // Der Buchstabe befindet sich im Wort
+
+                    ergebnisAusgabe = "--> " + buchstabe + " ist richtig!\n\n";
                     
                     // Hilfsstring aus den Chars im "verdecktesWort" Array zusammenbauen 
                     string hilfsstring = "";
@@ -133,19 +166,12 @@ namespace Hangman
                     }
 
                     // Gewinnbedingung prüfen
-                    if (hilfsstring == wörter[zufallsIndex])
+                    if (hilfsstring == gesuchtesWort)
                     {
                         spielerHatGewonnen = true;
+                        zeichneHangman(-1);
                     }
                 }
-
-                Console.Write("\n\n------------------------------------------------------\n\n\n");
-            }
-
-            // Gewinnbedingung prüfen
-            if (spielerHatGewonnen)
-            {
-                zeichneHangman(-1);
             }
 
             // Verlierbedingung prüfen
@@ -153,9 +179,7 @@ namespace Hangman
             {
                 zeichneHangman(6);
             }
-
-            
-            Console.ReadLine();
+            Console.ReadKey();
         }
 
         private static void zeichneHangman(int status)
@@ -166,86 +190,79 @@ namespace Hangman
                 case -1: // Spieler hat gewonnen
                     Console.Clear();
                     Console.WriteLine("\nDu hast Paul vom Galgen gerettet!\n\n");
-                    Console.WriteLine("+--------+-");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|  \t\\O/  Hurra!");
-                    Console.WriteLine("|\\ \t |");
-                    Console.WriteLine("| \\\t/ \\");
-                    break;
+                    Console.WriteLine(" +--------+-");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |  \t\\O/  Hurra!");
+                    Console.WriteLine(" |\\ \t |");
+                    Console.WriteLine(" | \\\t/ \\");
+                    Console.WriteLine("\nWeiter mit beliebiger Taste.");
+                     break;
                 case 0:
-                    Console.WriteLine("+--------+-");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|\\");
-                    Console.WriteLine("| \\");
+                    Console.WriteLine("\n +--------+-");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |\\");
+                    Console.WriteLine(" | \\");
                     break;
                 case 1:
-                    Console.WriteLine("+--------+-");
-                    Console.WriteLine("|        O");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|\\");
-                    Console.WriteLine("| \\");
+                    Console.WriteLine("\n +--------+-");
+                    Console.WriteLine(" |        O");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |\\");
+                    Console.WriteLine(" | \\");
                     break;
                 case 2:
-                    Console.WriteLine("+--------+-");
-                    Console.WriteLine("|        O");
-                    Console.WriteLine("|        |");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|\\");
-                    Console.WriteLine("| \\");
+                    Console.WriteLine("\n +--------+-");
+                    Console.WriteLine(" |        O");
+                    Console.WriteLine(" |        |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |\\");
+                    Console.WriteLine(" | \\");
                     break;
                 case 3:
-                    Console.WriteLine("+--------+-");
-                    Console.WriteLine("|        O");
-                    Console.WriteLine("|       /|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|\\");
-                    Console.WriteLine("| \\");
+                    Console.WriteLine("\n +--------+-");
+                    Console.WriteLine(" |        O");
+                    Console.WriteLine(" |       /|");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |\\");
+                    Console.WriteLine(" | \\");
                     break;
                 case 4:
-                    Console.WriteLine("+--------+-");
-                    Console.WriteLine("|        O");
-                    Console.WriteLine("|       /|\\");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|\\");
-                    Console.WriteLine("| \\");
+                    Console.WriteLine("\n +--------+-");
+                    Console.WriteLine(" |        O");
+                    Console.WriteLine(" |       /|\\");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |\\");
+                    Console.WriteLine(" | \\");
                     break;
                 case 5:
-                    Console.WriteLine("+--------+-");
-                    Console.WriteLine("|        O");
-                    Console.WriteLine("|       /|\\");
-                    Console.WriteLine("|       / ");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|\\");
-                    Console.WriteLine("| \\");
+                    Console.WriteLine("\n +--------+-");
+                    Console.WriteLine(" |        O");
+                    Console.WriteLine(" |       /|\\");
+                    Console.WriteLine(" |       / ");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |");
+                    Console.WriteLine(" |\\");
+                    Console.WriteLine(" | \\");
                     break;
                 case 6: // Spieler hat gewonnen
                     Console.Clear();
-                    Console.WriteLine("\nWegen dir musste Paul sterben. Du Monster!\n");
-                    Console.WriteLine("+--------+-");
-                    Console.WriteLine("|        O");
-                    Console.WriteLine("|       /|\\");
-                    Console.WriteLine("|       / \\");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|");
-                    Console.WriteLine("|\\");
-                    Console.WriteLine("| \\");
+                    abspann();
                     break;
             }
             Console.WriteLine();
@@ -257,19 +274,61 @@ namespace Hangman
 
             zeichnePaul();
             Console.WriteLine("\nWeiter mit beliebiger Taste.");
-            Console.ReadLine();
+            Console.ReadKey();
             Console.Clear();
 
             zeichnePaulUndFred();
             Console.WriteLine("\nWeiter mit beliebiger Taste.");
-            Console.ReadLine();
+            Console.ReadKey();
             Console.Clear();
 
             zeichnePaulUndFred();
             Console.WriteLine("\n\nSei ein guter Mensch. Hilf Paul!");
             Console.WriteLine("\nWeiter mit beliebiger Taste.");
-            Console.ReadLine();
+            Console.ReadKey();
             Console.Clear();
+        }
+        private static void abspann()
+        {
+            zeichnePaulAmGalgen();
+            Console.WriteLine("\nWeiter mit beliebiger Taste.");
+            Console.ReadKey();
+            Console.Clear();
+
+            zeichneGrab();
+            Console.WriteLine("\nWeiter mit beliebiger Taste.");
+            Console.ReadKey();
+        }
+        private static void zeichnePaulAmGalgen()
+        {
+            Console.WriteLine("\nOh mein Gott! Paul ist tot!\n\n");
+            Console.WriteLine(" +--------+-");
+            Console.WriteLine(" |        O");
+            Console.WriteLine(" |       /|\\");
+            Console.WriteLine(" |       / \\");
+            Console.WriteLine(" |");
+            Console.WriteLine(" |");
+            Console.WriteLine(" |\\");
+            Console.WriteLine(" | \\");
+        }
+        private static void zeichneGrab()
+        {
+            Console.WriteLine("    __________________________");
+            Console.WriteLine("   /                          \\");
+            Console.WriteLine("  /    In Gedenken an Paul.    \\");
+            Console.WriteLine(" /                              \\");
+            Console.WriteLine(" |    Sie haben es versucht...   |");
+            Console.WriteLine(" |                               |");
+            Console.WriteLine(" |                               |");
+            Console.WriteLine(" |              ||               |");
+            Console.WriteLine(" |              ||               |");
+            Console.WriteLine(" |        ==============         |");
+            Console.WriteLine(" |              ||               |");
+            Console.WriteLine(" |              ||               |");
+            Console.WriteLine(" |              ||               |");
+            Console.WriteLine(" |              ||               |");
+            Console.WriteLine(" |              ||               |");
+            Console.WriteLine(" |_______________________________|");
         }
         private static void zeichnePaul()
         {
@@ -281,14 +340,14 @@ namespace Hangman
         private static void zeichnePaulUndFred()
         {
             Console.WriteLine("\nPaul möchte nicht am Galgen hängen wie sein Freund Fred...\n");
-            Console.WriteLine("+--------+-");
-            Console.WriteLine("|        O");
-            Console.WriteLine("|       /|\\");
-            Console.WriteLine("|       / \\");
-            Console.WriteLine("|");
-            Console.WriteLine("|  \t\t O  Oh Gott Fred!");
-            Console.WriteLine("|\\ \t\t/|\\");
-            Console.WriteLine("| \\\t\t/ \\");
+            Console.WriteLine(" +--------+-");
+            Console.WriteLine(" |        O");
+            Console.WriteLine(" |       /|\\");
+            Console.WriteLine(" |       / \\");
+            Console.WriteLine(" |");
+            Console.WriteLine(" |  \t\t O  Oh Gott Fred!");
+            Console.WriteLine(" |\\ \t\t/|\\");
+            Console.WriteLine(" | \\\t\t/ \\");
         }
     }
 }
